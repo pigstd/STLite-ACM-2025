@@ -199,11 +199,13 @@ public:
 			other.Rightson = nullptr;
 			return;
 		}
+		bool isflip = false;
 		if (Compare()(*value, *other.value))
 			std::swap(Size, other.Size),
 			std::swap(value, other.value),
 			std::swap(Leftson, other.Leftson),
-			std::swap(Rightson, other.Rightson);
+			std::swap(Rightson, other.Rightson),
+			isflip = true;
 		Size += other.Size;
 		if (Rightson == nullptr) {
 			Rightson = new priority_queue();
@@ -215,7 +217,21 @@ public:
 			other.Leftson = nullptr;
 			other.Rightson = nullptr;
 		}
-		else Rightson->merge(other);
+		else {
+			try {
+				Rightson->merge(other);
+			}
+			catch(...) {
+				Size -= other.Size;
+				if (isflip) {
+					std::swap(Size, other.Size),
+					std::swap(value, other.value),
+					std::swap(Leftson, other.Leftson),
+					std::swap(Rightson, other.Rightson);
+				}
+				throw;
+			}
+		}
 		std::swap(Leftson, Rightson);
 	}
 };
