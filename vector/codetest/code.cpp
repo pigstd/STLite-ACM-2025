@@ -89,7 +89,7 @@
          b[i].push_back(0);
          c[i].push_back(1);
      }
-     for (int i = 0; i < 1; ++i) {
+     for (int i = 0; i < 10; ++i) {
          a.insert(a.begin() + 1, std::vector<int>{1, 2});
         //  b.insert(b.begin() + 1, a[1]);
         //  c.insert(c.begin() + 1, b[1]);
