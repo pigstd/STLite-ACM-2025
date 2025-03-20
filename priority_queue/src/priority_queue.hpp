@@ -1,8 +1,10 @@
 #ifndef SJTU_PRIORITY_QUEUE_HPP
 #define SJTU_PRIORITY_QUEUE_HPP
 
+#include <array>
 #include <cstddef>
 #include <functional>
+#include <tuple>
 #include <type_traits>
 #include <iostream>
 #include <assert.h>
@@ -18,48 +20,61 @@ namespace sjtu {
 template<typename T, class Compare = std::less<T>>
 class priority_queue {
 private:
+	struct node {
+		T val;
+		node *Leftson, *Rightson;
+		node(T _val) : val(_val), Leftson(nullptr), Rightson(nullptr) {}
+		~node() {
+			if (Leftson != nullptr) delete Leftson;
+			if (Rightson != nullptr) delete Rightson;
+		}
+	};
 	size_t Size;
-	T *value;
-	priority_queue *Leftson, *Rightson;
+	node *Topnode;
+	// copy: 拷贝复制一个和 src 一样的树，并且返回指针
+	node *copy(node *src) {
+		if (src == nullptr) return nullptr;
+		node *res = new node(src->val);
+		res->Leftson = copy(src->Leftson);
+		res->Rightson = copy(src->Rightson);
+		return res;
+	}
+	node *merge(node *L, node *R) {
+		if (L == nullptr) return R;
+		if (R == nullptr) return L;
+		bool isflip = false;
+		if (Compare()(L->val, R->val))
+			std::swap(L, R), isflip = true;
+		try {
+			L->Rightson = merge(L->Rightson, R);
+		}
+		catch(...) {
+			if (isflip)
+				std::swap(L, R);
+			throw;
+		}
+		std::swap(L->Leftson, L->Rightson);
+		return L;
+	}
 public:
 	/**
 	 * @brief default constructor
 	 */
-	priority_queue() : Size(0), value(nullptr), Leftson(nullptr), Rightson(nullptr) {}
+	priority_queue() : Size(0), Topnode(nullptr) {}
 
 	/**
 	 * @brief copy constructor
 	 * @param other the priority_queue to be copied
 	 */
-	priority_queue(const priority_queue &other) {
-		Size = other.Size;
-		if (other.value != nullptr)
-			value = new T (*other.value);
-		else value = nullptr;
-		if (other.Leftson != nullptr)
-			Leftson = new priority_queue(*other.Leftson);
-		else Leftson = nullptr;
-		if (other.Rightson != nullptr)
-			Rightson = new priority_queue(*other.Rightson);
-		else Rightson = nullptr;
+	priority_queue(const priority_queue &other) : Size(other.Size) {
+		Topnode = copy(other.Topnode);
 	}
 
 	/**
 	 * @brief deconstructor
 	 */
 	~priority_queue() {
-		if (value != nullptr) {
-			delete value;
-			value = nullptr;
-		}
-		if (Leftson != nullptr) {
-			delete Leftson;
-			Leftson = nullptr;
-		}
-		if (Rightson != nullptr) {
-			delete Rightson;
-			Rightson = nullptr;
-		}
+		delete Topnode;
 	}
 
 	/**
@@ -70,25 +85,8 @@ public:
 	priority_queue &operator=(const priority_queue &other) {
 		if (this == &other) return *this;
 		Size = other.Size;
-		if (value == nullptr) {
-			if (other.value != nullptr)
-				value = new T (*other.value);
-		}
-		else {
-			if (other.value == nullptr) {
-				delete value;
-				value = nullptr;
-			}
-			else *value = *other.value;
-		}
-		delete Leftson;
-		if (other.Leftson != nullptr)
-			Leftson = new priority_queue(*other.Leftson);
-		else Leftson = nullptr;
-		delete Rightson;
-		if (other.Rightson != nullptr)
-			Rightson = new priority_queue(*other.Rightson);
-		else Rightson = nullptr;
+		delete Topnode;
+		Topnode = copy(other.Topnode);
 		return *this;
 	}
 
@@ -98,8 +96,8 @@ public:
 	 * @throws container_is_empty if empty() returns true
 	 */
 	const T & top() const {
-		if (Size == 0) throw container_is_empty();
-		return *value;
+		if (empty()) throw container_is_empty();
+		return Topnode->val;
 	}
 
 	/**
@@ -107,14 +105,15 @@ public:
 	 * @param e the element to be pushed
 	 */
 	void push(const T &e) {
-		if (Size == 0) {
-			Size = 1;
-			value = new T(e);
-			return;
+		node *newnode = new node(e);
+		try {
+			Topnode = merge(Topnode, newnode);
 		}
-		priority_queue newq;
-		newq.push(e);
-		merge(newq);
+		catch(...) {
+			delete newnode;
+			throw;
+		}
+		Size++;
 	}
 
 	/**
@@ -122,51 +121,13 @@ public:
 	 * @throws container_is_empty if empty() returns true
 	 */
 	void pop() {
-		if (Size == 0) throw container_is_empty();
-		if (Leftson == nullptr && Rightson == nullptr) {
-			delete value; value = nullptr;
-			Size = 0;
-			return;
-		}
-		if (Leftson == nullptr) {
-			priority_queue *tmp = Rightson;
-			Size = tmp->Size;
-			delete value;
-			value = tmp->value;
-			Leftson = tmp->Leftson;
-			Rightson = tmp->Rightson;
-			tmp->value = nullptr;
-			tmp->Leftson = nullptr;
-			tmp->Rightson = nullptr;
-			delete tmp; tmp = nullptr;
-			return;
-		}
-		if (Rightson == nullptr) {
-			priority_queue *tmp = Leftson;
-			Size = tmp->Size;
-			delete value;
-			value = tmp->value;
-			Leftson = tmp->Leftson;
-			Rightson = tmp->Rightson;
-			tmp->value = nullptr;
-			tmp->Leftson = nullptr;
-			tmp->Rightson = nullptr;
-			delete tmp; tmp = nullptr;
-			return;
-		}
-		Leftson->merge(*Rightson);
-		delete Rightson;
-		Rightson = nullptr;
-		priority_queue *tmp = Leftson;
-		Size = tmp->Size;
-		delete value;
-		value = tmp->value;
-		Leftson = tmp->Leftson;
-		Rightson = tmp->Rightson;
-		tmp->value = nullptr;
-		tmp->Leftson = nullptr;
-		tmp->Rightson = nullptr;
-		delete tmp; tmp = nullptr;
+		if (empty()) throw container_is_empty();
+		node *Ls = Topnode->Leftson, *Rs = Topnode->Rightson;
+		node *tmp = Topnode;
+		Topnode = merge(Ls, Rs);
+		tmp->Leftson = tmp->Rightson = nullptr;
+		delete tmp;
+		Size--;
 	}
 
 	/**
@@ -188,51 +149,10 @@ public:
 	 * @param other the priority_queue to be merged.
 	 */
 	void merge(priority_queue &other) {
-		if (other.Size == 0) return;
-		if (Size == 0) {
-			Size = other.Size;
-			value = other.value;
-			Leftson = other.Leftson;
-			Rightson = other.Rightson;
-			other.Size = 0, other.value = nullptr;
-			other.Leftson = nullptr;
-			other.Rightson = nullptr;
-			return;
-		}
-		bool isflip = false;
-		if (Compare()(*value, *other.value))
-			std::swap(Size, other.Size),
-			std::swap(value, other.value),
-			std::swap(Leftson, other.Leftson),
-			std::swap(Rightson, other.Rightson),
-			isflip = true;
+		Topnode = merge(Topnode, other.Topnode);
 		Size += other.Size;
-		if (Rightson == nullptr) {
-			Rightson = new priority_queue();
-			Rightson->Size = other.Size;
-			Rightson->value = other.value;
-			Rightson->Leftson = other.Leftson;
-			Rightson->Rightson = other.Rightson;
-			other.Size = 0, other.value = nullptr;
-			other.Leftson = nullptr;
-			other.Rightson = nullptr;
-		}
-		else {
-			try {
-				Rightson->merge(other);
-			}
-			catch(...) {
-				Size -= other.Size;
-				if (isflip) {
-					std::swap(Size, other.Size),
-					std::swap(value, other.value),
-					std::swap(Leftson, other.Leftson),
-					std::swap(Rightson, other.Rightson);
-				}
-				throw;
-			}
-		}
-		std::swap(Leftson, Rightson);
+		other.Size = 0;
+		other.Topnode = nullptr;
 	}
 };
 

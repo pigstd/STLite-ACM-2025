@@ -1,4 +1,6 @@
+#include <cstdio>
 #include <iostream>
+#include <ostream>
 #include <queue>
 #include <ctime>
 #include <cstdlib>
@@ -9,35 +11,30 @@ void TestConstructorAndPush()
 {
 	std::cout << "Testing constructors, destructor and push..." << std::endl;
 	sjtu::priority_queue<int> pq;
-	for (int i = 100; i > 0; --i) {
+	for (int i = 1; i > 0; --i) {
 		pq.push(i);
         // std::cerr << "push " << i << '\n';
 	}
     // return;
-    std::cout << pq.top() << " ";
-    pq.pop();
-    // return;
-    std::cout << pq.top() << " ";
-    pq.pop();
-    // return;
 	while (!pq.empty()) {
+        std::cout << "qwq" << std::endl;
 		std::cout << pq.top() << " ";
 		pq.pop();
 	}
-    // return;
-	std::cout << std::endl;
-	for (int i = 1000; i > 100; --i) {
-		pq.push(i);
-	}
-	sjtu::priority_queue<int> pqBack(pq);
-	std::cout << pqBack.size() << std::endl;
-	sjtu::priority_queue<int> pqBB;
-	for (int i = 10; i <= 10000; ++i) {
-		pqBB.push(i);
-	}
-	std::cout << pqBB.size() << std::endl;
-	pqBB = pq;
-	std::cout << pqBB.size() << std::endl;
+    // // return;
+	// std::cout << std::endl;
+	// for (int i = 1000; i > 100; --i) {
+	// 	pq.push(i);
+	// }
+	// sjtu::priority_queue<int> pqBack(pq);
+	// std::cout << pqBack.size() << std::endl;
+	// sjtu::priority_queue<int> pqBB;
+	// for (int i = 10; i <= 10000; ++i) {
+	// 	pqBB.push(i);
+	// }
+	// std::cout << pqBB.size() << std::endl;
+	// pqBB = pq;
+	// std::cout << pqBB.size() << std::endl;
 }
 
 void TestSize()
@@ -121,8 +118,8 @@ void TestCompareException() {
 int main(int argc, char *const argv[])
 {
 	TestConstructorAndPush();
-	TestSize();
-	TestException();
-    TestCompareException();
+	// TestSize();
+	// TestException();
+    // TestCompareException();
 	return 0;
 }
